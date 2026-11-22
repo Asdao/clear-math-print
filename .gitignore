@@ -1,0 +1,10 @@
+node_modules/
+exports/
+*.html
+*.html.json
+*.pdf
+*.zip
+.env
+.env.*
+.DS_Store
+Thumbs.db

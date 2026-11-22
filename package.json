@@ -1,0 +1,21 @@
+{
+  "name": "clear-math-print",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "node build.cjs",
+    "test": "node tests/core.cjs"
+  },
+  "dependencies": {
+    "katex": "0.19.1",
+    "markdown-it": "15.0.3",
+    "markdown-it-texmath": "1.0.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  },
+  "description": "Offline math-safe printing for Obsidian notes, with a reusable terminal converter.",
+  "engines": {
+    "node": ">=20"
+  }
+}

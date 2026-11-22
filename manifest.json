@@ -1,0 +1,9 @@
+{
+  "id": "clear-math-print",
+  "name": "Clear Math Print",
+  "version": "0.1.0",
+  "minAppVersion": "1.6.0",
+  "description": "Combine notes into an offline print preview with KaTeX formulas, images, and compact layouts.",
+  "author": "Local prototype",
+  "isDesktopOnly": true
+}
