@@ -6,7 +6,7 @@ function inside(root, file) {
   const rel = path.relative(root, file);
   return rel === "" || !rel.startsWith(".." + path.sep) && rel !== ".." && !path.isAbsolute(rel);
 }
-function list(vault, folder = "", start = "", order = "created") {
+function list(vault, folder = "", start = "", order = "created", files) {
   vault = fs.realpathSync(vault);
   const base = path.resolve(vault, folder);
   if (!inside(vault, base)) throw Error("Folder must be inside the vault.");
@@ -27,10 +27,22 @@ function list(vault, folder = "", start = "", order = "created") {
     cutoff = fs.statSync(p).birthtimeMs;
   }
   const notes = all.filter((p) => inside(base, p) && p.endsWith(".md") && fs.statSync(p).birthtimeMs >= cutoff).sort((a, b) => order === "name" ? a.localeCompare(b) : fs.statSync(a).birthtimeMs - fs.statSync(b).birthtimeMs || a.localeCompare(b));
+  if (files !== undefined) {
+    if (!Array.isArray(files)) throw Error("Selected notes must be a list.");
+    const selected = [...new Set(files.map((file) => path.resolve(vault, file)))];
+    for (const file of selected) {
+      if (!inside(vault, file) || !all.includes(file) || !file.endsWith(".md")) {
+        throw Error("Selected note not found inside the vault: " + path.relative(vault, file));
+      }
+    }
+    const chosen = new Set(selected);
+    // Keep asset and embed resolution vault-wide; restrict only top-level notes.
+    return { vault, all, notes: all.filter((p) => chosen.has(p)).sort((a, b) => order === "name" ? a.localeCompare(b) : fs.statSync(a).birthtimeMs - fs.statSync(b).birthtimeMs || a.localeCompare(b)) };
+  }
   return { vault, all, notes };
 }
 function render(config) {
-  const { vault, all, notes } = list(config.vault, config.folder, config.start, config.order);
+  const { vault, all, notes } = list(config.vault, config.files === undefined ? config.folder : "", config.files === undefined ? config.start : "", config.order, config.files);
   if (!notes.length) throw Error("No notes matched.");
   const warnings = [], warning = (s) => {
     if (!warnings.includes(s)) warnings.push(s);
@@ -161,3 +173,4 @@ function render(config) {
   return { html, notes: notes.map((p) => path.relative(vault, p).replaceAll("\\", "/")), warnings };
 }
 module.exports = { render, list };
+
