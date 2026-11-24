@@ -110,6 +110,24 @@ async function main() {
     if (process.env.PRINT_PDF) fs.writeFileSync(process.env.PRINT_PDF, pdf);
     assert.deepEqual(external, []);
     assert.deepEqual(errors, []);
+    // Repeated overflowing equations should share layout measurement passes.
+    await page.emulateMedia({ media: 'screen' });
+    await page.evaluate(() => {
+      const equation = document.querySelector('.katex-display');
+      for (let i = 0; i < 29; i++) document.querySelector('.print-document').append(equation.cloneNode(true));
+    });
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    const debuggerSession = await context.newCDPSession(page);
+    await debuggerSession.send('Performance.enable');
+    const metric = metrics => metrics.metrics.find(item => item.name === 'LayoutCount').value;
+    const beforeFit = metric(await debuggerSession.send('Performance.getMetrics'));
+    await page.evaluate(() => {
+      window.dispatchEvent(new Event('beforeprint'));
+      document.body.offsetWidth; // Complete the final batched write for measurement.
+    });
+    const afterFit = metric(await debuggerSession.send('Performance.getMetrics'));
+    assert.ok(afterFit - beforeFit <= 3, 'Equation fitting must batch layout work');
+    await debuggerSession.detach();
     const cli = path.join(vault, 'cli.html');
     execFileSync(process.execPath, ['convert.cjs', '--vault', vault, '--out', cli]);
     await page.emulateMedia({ media: 'screen' });
