@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "build": "node build.cjs",
-    "test": "node tests/core.cjs && node tests/plugin.cjs && node tests/architecture.cjs"
+    "test": "node tests/core.cjs && node tests/plugin.cjs && node tests/architecture.cjs && node tests/formatting.cjs",
+    "test:browser": "node tests/browser.cjs"
   },
   "dependencies": {
     "katex": "0.19.1",
@@ -12,7 +13,8 @@
     "markdown-it-texmath": "1.0.0"
   },
   "devDependencies": {
-    "esbuild": "0.28.2"
+    "esbuild": "0.28.2",
+    "playwright-core": "^1.65.1"
   },
   "description": "Offline math-safe printing for Obsidian notes, with a reusable terminal converter.",
   "engines": {
