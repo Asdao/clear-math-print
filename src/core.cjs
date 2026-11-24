@@ -1,48 +1,10 @@
-const fs = require("fs"), path = require("path"), crypto = require("crypto");
+const fs = require("fs"), path = require("path");
+const { inside, selectNotes, list } = require("./selection.cjs");
+const { assembleDocument } = require("./document.cjs");
 const MarkdownIt = require("markdown-it"), texmath = require("markdown-it-texmath"), katex = require("katex");
-const mathCss = require("./math-css.json");
-const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-function inside(root, file) {
-  const rel = path.relative(root, file);
-  return rel === "" || !rel.startsWith(".." + path.sep) && rel !== ".." && !path.isAbsolute(rel);
-}
-function list(vault, folder = "", start = "", order = "created", files) {
-  vault = fs.realpathSync(vault);
-  const base = path.resolve(vault, folder);
-  if (!inside(vault, base)) throw Error("Folder must be inside the vault.");
-  const all = [];
-  function walk(d) {
-    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
-      if (e.name.startsWith(".") || e.isSymbolicLink()) continue;
-      const p = path.join(d, e.name);
-      if (e.isDirectory()) walk(p);
-      else all.push(p);
-    }
-  }
-  walk(vault);
-  let cutoff = 0;
-  if (start) {
-    const p = path.resolve(base, start.endsWith(".md") ? start : start + ".md");
-    if (!inside(base, p) || !fs.existsSync(p)) throw Error("Starting note not found in this folder.");
-    cutoff = fs.statSync(p).birthtimeMs;
-  }
-  const notes = all.filter((p) => inside(base, p) && p.endsWith(".md") && fs.statSync(p).birthtimeMs >= cutoff).sort((a, b) => order === "name" ? a.localeCompare(b) : fs.statSync(a).birthtimeMs - fs.statSync(b).birthtimeMs || a.localeCompare(b));
-  if (files !== undefined) {
-    if (!Array.isArray(files)) throw Error("Selected notes must be a list.");
-    const selected = [...new Set(files.map((file) => path.resolve(vault, file)))];
-    for (const file of selected) {
-      if (!inside(vault, file) || !all.includes(file) || !file.endsWith(".md")) {
-        throw Error("Selected note not found inside the vault: " + path.relative(vault, file));
-      }
-    }
-    const chosen = new Set(selected);
-    // Keep asset and embed resolution vault-wide; restrict only top-level notes.
-    return { vault, all, notes: all.filter((p) => chosen.has(p)).sort((a, b) => order === "name" ? a.localeCompare(b) : fs.statSync(a).birthtimeMs - fs.statSync(b).birthtimeMs || a.localeCompare(b)) };
-  }
-  return { vault, all, notes };
-}
+const { esc } = require("./html.cjs");
 function render(config) {
-  const { vault, all, notes } = list(config.vault, config.files === undefined ? config.folder : "", config.files === undefined ? config.start : "", config.order, config.files);
+  const { vault, all, notes } = selectNotes(config);
   if (!notes.length) throw Error("No notes matched.");
   const warnings = [], warning = (s) => {
     if (!warnings.includes(s)) warnings.push(s);
@@ -161,15 +123,8 @@ function render(config) {
     html2 = html2.replace(/PRINTPLACEHOLDER(\d+)END/g, (_, i) => replacements[Number(i)]);
     return html2;
   }
-  const compact = config.compact !== false;
-  const width = compact ? 155 : 182;
-  const title = config.title || "Print Notes";
   const body = notes.map((p, i) => '<article class="note" id="note-' + i + '"><h1>' + esc(path.basename(p, ".md")) + "</h1>" + note(p) + "</article>").join("\n");
-  const script = `function fit(){for(const e of document.querySelectorAll('.katex-display')){e.style.fontSize='';const k=e.querySelector('.katex');if(k&&k.scrollWidth>e.clientWidth)e.style.fontSize=(e.clientWidth/k.scrollWidth*100)+'%';}}async function ready(){await document.fonts.ready;await Promise.all([...document.images].map(i=>i.decode().catch(()=>{})));fit();document.body.dataset.ready='true';}ready();window.addEventListener('beforeprint',fit);document.getElementById('print').onclick=async()=>{await ready();window.print();};`;
-  const hash = crypto.createHash("sha256").update(script).digest("base64");
-  const css = `@page{size:A4;margin:12mm 12mm 14mm}*{box-sizing:border-box}body{font:${compact ? "10" : "11"}pt/1.4 Georgia,serif;color:#17202a;margin:0}.note+.note{${config.noteBreaks ? "break-before:page;" : "margin-top:28px;"}}h1{font-size:21pt;border-bottom:2px solid #34495e;padding-bottom:6px;margin:0 0 12px}h2{font-size:15pt}h3{font-size:12pt}h1,h2,h3,h4{break-after:avoid;line-height:1.25}p{margin:6px 0}img{display:block;max-width:100%;max-height:${compact ? "95" : "230"}mm;width:auto;height:auto;object-fit:contain;margin:7px auto;break-inside:avoid}table{width:100%;border-collapse:collapse;font-size:8.5pt;margin:9px 0}th,td{border:1px solid #bdc7d1;padding:4px;overflow-wrap:anywhere}th{background:#edf1f5}tr{break-inside:avoid}thead{display:table-header-group}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f1f3f5;padding:8px;font-size:8.5pt}blockquote{background:#f3f5f7;border-left:3px solid #9aa8b6;margin:8px 0;padding:5px 12px}.katex-display{overflow:visible!important;padding:5px 0;break-inside:avoid;margin:9px 0}.equation{break-inside:avoid}.katex{line-height:normal}a{color:inherit;text-decoration:none}.warning{color:#943600}.embedded{border-left:2px solid #b8c4d0;padding-left:10px}code{font-size:.9em}.toc{columns:2;font:10pt/1.7 sans-serif;margin-bottom:22px}.toolbar{font:14px sans-serif;background:#edf1f5;padding:16px;margin-bottom:24px}.toolbar button{padding:8px 16px;cursor:pointer}@media screen{body{max-width:${width}mm;margin:24px auto;padding:12px}}@media print{.toolbar{display:none}body{max-width:none}.note img{max-width:${width}mm}}`;
-  const toc = notes.map((p, i) => '<div><a href="#note-' + i + '">' + (i + 1) + ". " + esc(path.basename(p, ".md")) + "</a></div>").join("");
-  const html = `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; font-src data:; style-src 'unsafe-inline'; script-src 'sha256-` + hash + `'; base-uri 'none'; form-action 'none'"><title>` + esc(title) + "</title><style>" + mathCss + "\n" + css + '</style></head><body><div class="toolbar"><button id="print">Print / Save as PDF</button><p>' + notes.length + " notes \xB7 " + (compact ? "Compact" : "Comfortable") + ' layout. Choose A4, scale 100%, and enable background graphics.</p></div><nav class="toc">' + toc + "</nav>" + body + "<script>" + script + "<\/script></body></html>";
+  const html = assembleDocument({ config, notes, body });
   return { html, notes: notes.map((p) => path.relative(vault, p).replaceAll("\\", "/")), warnings };
 }
 module.exports = { render, list };
