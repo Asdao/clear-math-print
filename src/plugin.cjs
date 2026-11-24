@@ -1,6 +1,8 @@
 const { Plugin, Modal, Setting, Notice } = require("obsidian");
 const fs = require("fs"), path = require("path"), { shell } = require("electron");
-const { render, list } = require("./core.cjs");
+const { render } = require("./core.cjs");
+const { selectNotes } = require("./selection.cjs");
+const { ExportService } = require("./export-service.cjs");
 class ExportModal extends Modal {
   constructor(plugin, files) {
     super(plugin.app);
@@ -15,7 +17,7 @@ class ExportModal extends Modal {
     const o = this.options;
     const refresh = () => {
       try {
-        const result = list(this.app.vault.adapter.getBasePath(), this.files ? "" : o.folder, this.files ? "" : o.start, o.order, this.files);
+        const result = selectNotes({ ...o, vault: this.app.vault.adapter.getBasePath(), files: this.files });
         preview.setText(result.notes.length + " notes\n" + result.notes.map((p, i) => i + 1 + ". " + path.basename(p, ".md")).join("\n"));
         button.setDisabled(result.notes.length === 0);
       } catch (e) {
@@ -50,16 +52,11 @@ class ExportModal extends Modal {
         try {
           await new Promise((r) => setTimeout(r, 20));
           const base = this.app.vault.adapter.getBasePath();
-          const result = render({ ...o, files: this.files, vault: base, title: "Vault Print Notes" });
           const folder = path.join(base, this.app.vault.configDir, "plugins", this.plugin.manifest.id, "exports");
-          fs.mkdirSync(folder, { recursive: true });
-          const file = path.join(folder, "notes-" + Date.now() + ".html");
-          fs.writeFileSync(file, result.html);
-          fs.writeFileSync(file + ".json", JSON.stringify({ notes: result.notes, warnings: result.warnings }, null, 2));
+          const result = this.plugin.exportService.createPreview({ ...o, files: this.files, vault: base, title: "Vault Print Notes" }, folder);
           this.plugin.options = { ...o };
           await this.plugin.saveData(o);
-          const error = await shell.openPath(file);
-          if (error) throw Error(error);
+          await this.plugin.exportService.open(result.file);
           new Notice("Print preview created: " + result.notes.length + " notes" + (result.warnings.length ? ". " + result.warnings.length + " warnings; see preview report." : ""), 1e4);
           if (result.warnings.length) {
             preview.setText(result.warnings.join("\n"));
@@ -79,6 +76,7 @@ class ExportModal extends Modal {
 }
 module.exports = class extends Plugin {
   async onload() {
+    this.exportService = new ExportService({ render, fs, openPath: (file) => shell.openPath(file) });
     this.options = { folder: this.app.workspace.getActiveFile()?.parent?.path || "", start: "", order: "created", compact: true, noteBreaks: false, ...await this.loadData() };
     this.addCommand({ id: "create-print-preview", name: "Create combined print preview", callback: () => new ExportModal(this).open() });
     this.registerEvent(this.app.workspace.on("files-menu", (menu, files) => {
