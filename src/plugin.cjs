@@ -2,10 +2,11 @@ const { Plugin, Modal, Setting, Notice } = require("obsidian");
 const fs = require("fs"), path = require("path"), { shell } = require("electron");
 const { render, list } = require("./core.cjs");
 class ExportModal extends Modal {
-  constructor(plugin) {
+  constructor(plugin, files) {
     super(plugin.app);
     this.plugin = plugin;
     this.options = { ...plugin.options };
+    this.files = files?.slice();
   }
   onOpen() {
     const el = this.contentEl;
@@ -14,7 +15,7 @@ class ExportModal extends Modal {
     const o = this.options;
     const refresh = () => {
       try {
-        const result = list(this.app.vault.adapter.getBasePath(), o.folder, o.start, o.order);
+        const result = list(this.app.vault.adapter.getBasePath(), this.files ? "" : o.folder, this.files ? "" : o.start, o.order, this.files);
         preview.setText(result.notes.length + " notes\n" + result.notes.map((p, i) => i + 1 + ". " + path.basename(p, ".md")).join("\n"));
         button.setDisabled(result.notes.length === 0);
       } catch (e) {
@@ -22,11 +23,12 @@ class ExportModal extends Modal {
         button.setDisabled(true);
       }
     };
-    new Setting(el).setName("Folder").setDesc("Vault-relative folder; includes subfolders.").addText((t) => t.setValue(o.folder).onChange((v) => {
+    if (this.files) el.createEl("p", { text: "Printing selected Markdown notes only (including notes from different folders)." });
+    if (!this.files) new Setting(el).setName("Folder").setDesc("Vault-relative folder; includes subfolders.").addText((t) => t.setValue(o.folder).onChange((v) => {
       o.folder = v.trim();
       refresh();
     }));
-    new Setting(el).setName("Starting note (optional)").setDesc("Filename relative to the folder. Includes notes created at or after it.").addText((t) => t.setValue(o.start).onChange((v) => {
+    if (!this.files) new Setting(el).setName("Starting note (optional)").setDesc("Filename relative to the folder. Includes notes created at or after it.").addText((t) => t.setValue(o.start).onChange((v) => {
       o.start = v.trim();
       refresh();
     }));
@@ -48,7 +50,7 @@ class ExportModal extends Modal {
         try {
           await new Promise((r) => setTimeout(r, 20));
           const base = this.app.vault.adapter.getBasePath();
-          const result = render({ ...o, vault: base, title: "Vault Print Notes" });
+          const result = render({ ...o, files: this.files, vault: base, title: "Vault Print Notes" });
           const folder = path.join(base, this.app.vault.configDir, "plugins", this.plugin.manifest.id, "exports");
           fs.mkdirSync(folder, { recursive: true });
           const file = path.join(folder, "notes-" + Date.now() + ".html");
@@ -79,6 +81,13 @@ module.exports = class extends Plugin {
   async onload() {
     this.options = { folder: this.app.workspace.getActiveFile()?.parent?.path || "", start: "", order: "created", compact: true, noteBreaks: false, ...await this.loadData() };
     this.addCommand({ id: "create-print-preview", name: "Create combined print preview", callback: () => new ExportModal(this).open() });
+    this.registerEvent(this.app.workspace.on("files-menu", (menu, files) => {
+      const notes = [...new Set(files.filter((file) => file.extension === "md").map((file) => file.path))];
+      if (!notes.length) return;
+      menu.addItem((item) => item.setTitle("Create print preview of selected notes")
+        .setIcon("printer").onClick(() => new ExportModal(this, notes).open()));
+    }));
     this.addRibbonIcon("printer", "Clear Math Print", () => new ExportModal(this).open());
   }
 };
+
