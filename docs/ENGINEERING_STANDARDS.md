@@ -1,6 +1,6 @@
 # Engineering standards for browser formatting
 
-Status: agreed implementation baseline; formatting controls are not yet implemented.
+Status: implementation standard for the browser formatting controls. See ARCHITECTURE.md for current module ownership.
 Reviewed: 2026-11-24.
 Review baseline: `60ed19115067edfdc5f59cb531af0f4409ffab8f` on `feat/selected-notes-print`.
 
@@ -98,3 +98,4 @@ Required checks for the feature:
 - Report automated checks separately from live browser/Obsidian testing. Do not claim exact pagination or live-app compatibility without testing it.
 
 Review changes against these rules rather than counting classes or design patterns. Refactor only the code needed for the feature and preserve independently useful existing APIs.
+
