@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build": "node build.cjs",
-    "test": "node tests/core.cjs && node tests/plugin.cjs"
+    "test": "node tests/core.cjs && node tests/plugin.cjs && node tests/architecture.cjs"
   },
   "dependencies": {
     "katex": "0.19.1",
