@@ -58,6 +58,12 @@ async function main() {
     await page.fill('#format-fontSize', '14');
     assert.equal(await page.inputValue('#preset'), '');
     assert.ok(Math.abs(await page.locator('.print-document').evaluate(e => parseFloat(getComputedStyle(e).fontSize)) - 18.6667) < 0.1);
+    const lastAppliedStyles = await page.textContent('#document-styles');
+    await page.fill('#format-fontSize', '');
+    assert.equal(await page.inputValue('#format-fontSize'), '');
+    assert.equal(await page.textContent('#document-styles'), lastAppliedStyles);
+    assert.match(await page.textContent('#format-status'), /between 8 and 24/);
+    await page.fill('#format-fontSize', '14');
     await page.fill('#format-fontSize', '99');
     assert.match(await page.textContent('#format-status'), /between 8 and 24/);
     await page.fill('#format-fontSize', '14');
@@ -78,6 +84,16 @@ async function main() {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.waitForFunction(() => document.body.dataset.ready === 'true');
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
+    await page.emulateMedia({ media: 'print' });
+    await page.evaluate(() => window.dispatchEvent(new Event('beforeprint')));
+    await page.emulateMedia({ media: 'screen' });
+    await page.evaluate(() => {
+      // Force a stale print-sized equation to verify the afterprint lifecycle.
+      document.querySelector('.katex-display').style.fontSize = '100%';
+      window.dispatchEvent(new Event('afterprint'));
+    });
+    await page.waitForFunction(() => document.body.dataset.ready === 'true');
+    assert.ok(await equationSize() < 100);
     await page.setViewportSize({ width: 1280, height: 960 });
     await page.selectOption('#preset', 'academic');
     await page.waitForFunction(() => document.body.dataset.ready === 'true');
