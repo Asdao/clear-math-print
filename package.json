@@ -4,8 +4,9 @@
   "private": true,
   "scripts": {
     "build": "node build.cjs",
-    "test": "node tests/core.cjs && node tests/plugin.cjs && node tests/architecture.cjs && node tests/formatting.cjs",
-    "test:browser": "node tests/browser.cjs"
+    "test": "node tests/core.cjs && node tests/plugin.cjs && node tests/architecture.cjs && node tests/formatting.cjs && node tests/performance.cjs",
+    "test:browser": "node tests/browser.cjs",
+    "benchmark": "node scripts/benchmark.cjs"
   },
   "dependencies": {
     "katex": "0.19.1",
