@@ -12,6 +12,12 @@ A desktop Obsidian plugin and standalone converter for combining notes into an o
 
 The initial folder is the active note’s folder; the starting-note field is empty. A starting note filters by its filesystem creation timestamp; copying or restoring a vault can change these timestamps. Clear the field to include the entire folder. Ordering by filename does not change that filter.
 
+## Print selected files
+
+Select multiple notes in Obsidian's file explorer, then right-click the selection and choose **Create print preview of selected notes**. Only selected Markdown files are included; folders and attachments in the selection are ignored. Review the selected notes, choose their order and layout, then create the preview. Folder and starting-note filters do not apply to this action.
+
+The action uses Obsidian's existing multi-file selection, including Alt selection where supported by your setup. It does not change Obsidian's selection shortcuts.
+
 ## Layouts
 
 - Compact: 10 pt body text, images capped at 95 mm high, continuous notes by default.
@@ -48,3 +54,4 @@ Fixture tests cover math, images, basic callouts, whole-note/heading embeds, cir
 ## Source and build
 
 Source is included in `src/`. From this folder, run `npm install`, then `npm run build`. Build dependencies are declared in `package.json`; the distributed `main.js` and `convert.cjs` already include runtime dependencies. Bundled dependency licenses are in `THIRD-PARTY-NOTICES.txt`.
+
