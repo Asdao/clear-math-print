@@ -10,6 +10,8 @@ A desktop Obsidian plugin and standalone converter for combining notes into an o
 4. Review the folder, starting note, order and list of matching notes. Choose a layout and click **Create print preview**.
 5. In the browser, click **Print / Save as PDF**. Choose A4, scale 100%, enable background graphics, and disable browser headers and footers if unwanted.
 
+To print specific notes, select them in Obsidian's file explorer, right-click and choose **Print selected notes**. Selected folders include their Markdown notes recursively; attachments are ignored. The printer icon and command also detect explorer selections. The dialog defaults to **Selected files** and lists their vault-relative paths. Choose **Folder** in Print source to use folder/starting-note filters instead. Selections are not saved for later sessions.
+
 The initial folder is the active note’s folder; the starting-note field is empty. A starting note filters by its filesystem creation timestamp; copying or restoring a vault can change these timestamps. Clear the field to include the entire folder. Ordering by filename does not change that filter.
 
 ## Layouts
@@ -17,7 +19,10 @@ The initial folder is the active note’s folder; the starting-note field is emp
 - Compact: 10 pt body text, images capped at 95 mm high, continuous notes by default.
 - Comfortable: 11 pt body text, larger diagrams. Prefer this for diagrams with small labels.
 - Optional page breaks between notes.
-- A linked contents list is included in the preview and PDF.
+- An optional linked contents list can be shown in the preview and PDF.
+- Preview controls adjust text size, margins, page breaks between notes, note titles, and the contents list before printing. Contents are hidden by default; the controls never appear in the PDF. A matching first heading is kept once instead of repeating the filename above it. Note content is otherwise preserved.
+- The Font selector offers Source Serif 4, Source Sans 3, Inter, and the existing system Georgia option. The three open-source font families include bold and italic and are embedded for offline use. Math retains its KaTeX fonts. Font licenses are included in the exported HTML and `THIRD-PARTY-NOTICES.txt`.
+- Text sizes range from 6 to 48 pt, including half-point options around common reading sizes. Compact and Comfortable still start at 10 and 11 pt respectively.
 
 The plugin opens the browser's print preview workflow rather than generating a PDF inside Obsidian. It does not require Node, Python, a venv, Chrome automation, or a network connection. It writes HTML and a matching JSON report beneath `.obsidian/plugins/clear-math-print/exports/`. Existing source notes are read only. Old exports are retained; delete them manually when no longer needed.
 
@@ -25,7 +30,7 @@ The plugin opens the browser's print preview workflow rather than generating a P
 
 Supports Markdown tables, code, inline/display math, local Markdown images, wiki image embeds (including width), wiki links to included notes, whole-note embeds, heading embeds, and basic callouts rendered as labeled blockquotes. Cyclic embeds stop with a warning.
 
-This is an independent Markdown/KaTeX renderer, not an exact Obsidian preview clone. Block-reference embeds are flagged, not expanded. Heading links navigate to the containing included note. Custom Obsidian plugins, Dataview queries, Mermaid, PDFs embedded as attachments, videos and advanced MathJax-only commands are not rendered. Remote images are flagged; network resources and note-provided scripts are blocked in the exported HTML. Raw HTML may differ from Obsidian. Avoid exporting secrets to a file you plan to share.
+This is an independent Markdown/KaTeX renderer, not an exact Obsidian preview clone. Block-reference embeds are flagged, not expanded. Heading links navigate to the containing included note. Custom Obsidian plugins, Dataview queries, Mermaid, PDFs embedded as attachments, videos and advanced MathJax-only commands are not rendered. Remote images are flagged; network resources and note-provided scripts are blocked in the exported HTML. Raw HTML in notes is displayed as text to prevent injected scripts, redirects and other active markup. Wiki syntax in code examples stays literal. Avoid exporting secrets to a file you plan to share.
 
 Warnings appear in the dialog and companion `.html.json` report. KaTeX parse errors appear in the preview; review before printing. For assets with duplicate filenames, use explicit vault-relative paths.
 
