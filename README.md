@@ -27,6 +27,16 @@ The action uses Obsidian's existing multi-file selection, including Alt selectio
 
 The plugin opens the browser's print preview workflow rather than generating a PDF inside Obsidian. It does not require Node, Python, a venv, Chrome automation, or a network connection. It writes HTML and a matching JSON report beneath `.obsidian/plugins/clear-math-print/exports/`. Existing source notes are read only. Old exports are retained; delete them manually when no longer needed.
 
+## Browser formatting controls
+
+Open an export in your browser and expand **Formatting**. Choose Compact, Comfortable, or Academic, then adjust individual settings. Changes update the document immediately without changing your Obsidian notes.
+
+Controls include font family, text size, line spacing, four margins, heading scale, maximum image height, A4/Letter paper, portrait/landscape orientation, and note breaks. **Reset to initial settings** restores the options used to create this export. Large images are also capped to the available page height. Font choices use fonts installed on the viewing computer; math fonts remain embedded.
+
+Settings apply to the current open preview only. Reloading the HTML restores its initial settings; changing controls does not save the HTML or sync settings back to Obsidian. Saved custom presets, CSS editing, and note-content editing are not included in this version.
+
+The screen shows a continuous document, not exact page boundaries. In the browser print dialog, use the selected paper and orientation, scale 100%, and enable background graphics. Print-dialog settings can override the page CSS. The formatting controls are hidden in printed output.
+
 ## Supported content and limits
 
 Supports Markdown tables, code, inline/display math, local Markdown images, wiki image embeds (including width), wiki links to included notes, whole-note embeds, heading embeds, and basic callouts rendered as labeled blockquotes. Cyclic embeds stop with a warning.
@@ -55,3 +65,7 @@ Fixture tests cover math, images, basic callouts, whole-note/heading embeds, cir
 
 Source is included in `src/`. From this folder, run `npm install`, then `npm run build`. Build dependencies are declared in `package.json`; the distributed `main.js` and `convert.cjs` already include runtime dependencies. Bundled dependency licenses are in `THIRD-PARTY-NOTICES.txt`.
 
+
+### Browser checks
+
+Run `npm run build`, `npm test`, then `npm run test:browser`. Browser tests use `CHROMIUM_PATH` if set, system Chromium when available, or the browser installed with `npx playwright-core install chromium`. CI installs Chromium and runs the same tests. Tests load generated HTML into an offline Chromium document and exercise formatting and PDF output.
