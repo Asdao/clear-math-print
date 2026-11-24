@@ -22,7 +22,7 @@ class FormattingController {
     for (const control of this.controls) this.listen(control, 'input', () => {
       const key = control.dataset.format, field = FIELDS[key];
       if (!field) return;
-      if (control.type === 'number' && !control.checkValidity()) {
+      if (control.type === 'number' && (!Number.isFinite(control.valueAsNumber) || !control.checkValidity())) {
         this.status('Enter ' + field.label.toLowerCase() + ' between ' + field.min + ' and ' + field.max + '.');
         return;
       }
