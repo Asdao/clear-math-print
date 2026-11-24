@@ -29,6 +29,7 @@ function browserRuntime(document, window) {
   }
   const controller = new FormattingController({ document, settings: JSON.parse(document.getElementById('initial-formatting').textContent), onLayoutChange: scheduleFit }).mount();
   window.addEventListener('resize', scheduleFit);
+  window.addEventListener('afterprint', scheduleFit);
   window.addEventListener('beforeprint', fit);
   document.fonts.addEventListener('loadingdone', scheduleFit);
   async function print() {
@@ -51,6 +52,7 @@ function browserRuntime(document, window) {
     controller.destroy();
     window.cancelAnimationFrame(frame);
     window.removeEventListener('resize', scheduleFit);
+    window.removeEventListener('afterprint', scheduleFit);
     window.removeEventListener('beforeprint', fit);
     document.fonts.removeEventListener('loadingdone', scheduleFit);
     button.removeEventListener('click', print);
