@@ -36,21 +36,10 @@ async function main() {
     const script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
     const hash = crypto.createHash('sha256').update(script).digest('base64');
     assert.ok(html.includes("script-src 'sha256-" + hash + "'"));
-    assert.ok(!/require\(|module\.exports/.test(script));
-    let printed = 0, beforeprint;
-    const button = {}, math = { scrollWidth: 200 };
-    const equation = { style: { fontSize: 'stale' }, clientWidth: 100, querySelector: () => math };
-    const document = { fonts: { ready: Promise.resolve() }, images: [{ decode: () => Promise.reject(Error('bad image')) }], body: { dataset: {} }, querySelectorAll: () => [equation], getElementById: () => button };
-    const window = { addEventListener: (event, handler) => { assert.equal(event, 'beforeprint'); beforeprint = handler; }, print: () => printed++ };
-    vm.runInNewContext(script, { document, window });
-    await button.onclick();
-    assert.equal(document.body.dataset.ready, 'true');
-    assert.equal(equation.style.fontSize, '50%');
-    assert.equal(printed, 1);
-    equation.clientWidth = 300;
-    beforeprint();
-    assert.equal(equation.style.fontSize, '');
-    console.log('PASS: selection compatibility, export adapters, CSP and embedded browser print lifecycle');
+    new vm.Script(script); // Actual execution is covered in Chromium by test:browser.
+    assert.ok(html.includes('id="document-styles"'));
+    assert.ok(html.includes('class="print-document"'));
+    console.log('PASS: selection compatibility, export adapters, CSP and bundled browser syntax');
   } finally { fs.rmSync(vault, { recursive: true, force: true }); }
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });
