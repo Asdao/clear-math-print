@@ -3,14 +3,18 @@ function browserRuntime(document, window) {
   const button = document.getElementById('print');
   let pendingReady, printing = false, frame;
   function fit() {
-    for (const element of document.querySelectorAll('.print-document .katex-display')) {
-      element.style.fontSize = '';
+    const equations = [...document.querySelectorAll('.print-document .katex-display')];
+    // Reset all sizes, measure together, then apply: avoid layout per equation.
+    for (const element of equations) element.style.fontSize = '';
+    const sizes = equations.map(element => {
       const math = element.querySelector('.katex');
-      if (math && math.scrollWidth > element.clientWidth && element.clientWidth > 0) {
-        element.style.fontSize = (element.clientWidth / math.scrollWidth * 100) + '%';
-      }
-    }
+      const width = element.clientWidth;
+      const mathWidth = math?.scrollWidth || 0;
+      return width > 0 && mathWidth > width ? (width / mathWidth * 100) + '%' : '';
+    });
+    equations.forEach((element, index) => { element.style.fontSize = sizes[index]; });
   }
+
   function ready() {
     if (!pendingReady) pendingReady = (async () => {
       try {
