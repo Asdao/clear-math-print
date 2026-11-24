@@ -11,7 +11,30 @@ function render(config) {
   };
   const ids = new Map(notes.map((p, i) => [p, "note-" + i]));
   const md = new MarkdownIt({ html: true, breaks: true }).use(texmath, { engine: katex, delimiters: "dollars", katexOptions: { throwOnError: false, strict: false, trust: false } });
+  const resolutions = new Map(), texts = new Map();
+  let relativePaths, basenames;
+  function findIndexed(name) {
+    if (!relativePaths) {
+      // Build only on fallback; preserve traversal order for duplicate basenames.
+      relativePaths = new Map();
+      basenames = new Map();
+      for (const file of all) {
+        relativePaths.set(path.relative(vault, file).replaceAll("\\", "/"), file);
+        const base = path.basename(file);
+        for (const key of [base, ...(base.endsWith(".md") ? [base.slice(0, -3)] : [])]) {
+          if (!basenames.has(key)) basenames.set(key, file);
+        }
+      }
+    }
+    return relativePaths.get(name) || basenames.get(name);
+  }
   function resolve(ref, source) {
+    let cache = resolutions.get(path.dirname(source));
+    if (!cache) resolutions.set(path.dirname(source), cache = new Map());
+    if (!cache.has(ref)) cache.set(ref, resolveUncached(ref, source));
+    return cache.get(ref);
+  }
+  function resolveUncached(ref, source) {
     let name;
     try {
       name = decodeURIComponent(ref);
@@ -23,7 +46,7 @@ function render(config) {
     for (const p of candidates) {
       for (const candidate of [p, p + ".md"]) if (inside(vault, candidate) && fs.existsSync(candidate) && fs.statSync(candidate).isFile() && inside(vault, fs.realpathSync(candidate))) return candidate;
     }
-    return all.find((p) => path.relative(vault, p).replaceAll("\\", "/") === name) || all.find((p) => path.basename(p) === name || path.basename(p) === name + ".md");
+    return findIndexed(name);
   }
   const cache = /* @__PURE__ */ new Map();
   function image(p) {
@@ -93,7 +116,8 @@ function render(config) {
       warning("Circular or deep embed: " + path.relative(vault, p));
       return '<p class="warning">[Circular/deep note embed]</p>';
     }
-    let text = section(fs.readFileSync(p, "utf8").replace(/^\uFEFF/, "").replace(/^---\r?\n[\s\S]*?\r?\n---\s*\r?\n/, ""), heading);
+    if (!texts.has(p)) texts.set(p, fs.readFileSync(p, "utf8").replace(/^\uFEFF/, "").replace(/^---\r?\n[\s\S]*?\r?\n---\s*\r?\n/, ""));
+    let text = section(texts.get(p), heading);
     const replacements = [];
     function hold(html3) {
       const key = "PRINTPLACEHOLDER" + replacements.length + "END";
