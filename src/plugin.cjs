@@ -16,6 +16,7 @@ class ExportModal extends Modal {
     el.createEl("p", { text: "Choose notes, review the list, then open an offline print preview." });
     const o = this.options;
     const refresh = () => {
+      clearTimeout(this.refreshTimer);
       try {
         const result = selectNotes({ ...o, vault: this.app.vault.adapter.getBasePath(), files: this.files });
         preview.setText(result.notes.length + " notes\n" + result.notes.map((p, i) => i + 1 + ". " + path.basename(p, ".md")).join("\n"));
@@ -25,14 +26,20 @@ class ExportModal extends Modal {
         button.setDisabled(true);
       }
     };
+    const scheduleRefresh = () => {
+      clearTimeout(this.refreshTimer);
+      button.setDisabled(true);
+      preview.setText("Updating note list…");
+      this.refreshTimer = setTimeout(refresh, 150);
+    };
     if (this.files) el.createEl("p", { text: "Printing selected Markdown notes only (including notes from different folders)." });
     if (!this.files) new Setting(el).setName("Folder").setDesc("Vault-relative folder; includes subfolders.").addText((t) => t.setValue(o.folder).onChange((v) => {
       o.folder = v.trim();
-      refresh();
+      scheduleRefresh();
     }));
     if (!this.files) new Setting(el).setName("Starting note (optional)").setDesc("Filename relative to the folder. Includes notes created at or after it.").addText((t) => t.setValue(o.start).onChange((v) => {
       o.start = v.trim();
-      refresh();
+      scheduleRefresh();
     }));
     new Setting(el).setName("Order").addDropdown((d) => d.addOption("created", "Creation date").addOption("name", "Filename").setValue(o.order).onChange((v) => {
       o.order = v;
@@ -71,6 +78,7 @@ class ExportModal extends Modal {
     refresh();
   }
   onClose() {
+    clearTimeout(this.refreshTimer);
     this.contentEl.empty();
   }
 }
