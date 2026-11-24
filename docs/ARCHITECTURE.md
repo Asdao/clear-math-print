@@ -37,3 +37,11 @@ Defaults, preset values, and explicit overrides resolve through one normalizatio
 The initial state is HTML-escaped into a hidden data element. Browser changes replace only the generated document stylesheet and refit math; Markdown is not rerendered. Controls live outside `.print-document` and are hidden for print. Page geometry is emitted directly as validated `@page` rules. User settings and presets are not persisted.
 
 Source entry points and browser code share the same formatting schema and CSS generator. Build the browser bundle first whenever those modules change, then rebuild both Node entry points. Generated browser code is tracked so source-level tests also work after checkout. CI rebuilds before testing.
+
+## Performance boundaries
+
+Creation timestamps are memoized within one selection request, including the starting-note cutoff. Selected-file validation uses a set. Reference resolutions (including misses) are cached by source directory and reference within one render. Vault-relative and basename indexes are built lazily on the first fallback lookup and retain the original traversal precedence. Normalized note text is cached within a render; rendered embeds are not cached because cycle/depth handling depends on their stack. All caches are discarded between exports.
+
+Equation fitting resets all sizes, measures all widths, then applies sizes in a separate pass. Layouts are batched while retaining resource readiness and print lifecycle handling. Folder/start input changes debounce note-list refresh by 150 ms; export is disabled while pending. Changing order refreshes immediately, and closing the modal cancels pending work.
+
+`npm run benchmark` reports warm-cache synthetic selection/render timings and filesystem call counts. `npm test` checks operation bounds and cache freshness; browser tests check batched layout passes with 30 overflowing equations. These fixtures do not predict performance for every real vault.
