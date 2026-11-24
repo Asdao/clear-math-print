@@ -20,3 +20,18 @@ const r2 = render({ vault: v, folder: "Course" });
 assert.ok(r2.warnings.some((w) => w.includes("Missing embed")));
 assert.ok(r2.warnings.some((w) => w.includes("Block embed")));
 console.log("PASS: math, images, callouts, embeds, cycles, links, warnings, path bounds");
+
+
+// Explicit multi-file selection ignores folder/cutoff and retains embed assets.
+fs.mkdirSync(path.join(v, "Other"));
+fs.writeFileSync(path.join(v, "Other/D.md"), "SELECTED_OTHER_FOLDER");
+const selected = render({ vault: v, folder: "missing", start: "missing", order: "name", files: ["Other/D.md", "Course/A.md", "Course/A.md"] });
+assert.deepEqual(selected.notes, ["Course/A.md", "Other/D.md"]);
+assert.match(selected.html, /EMBED_CONTENT/);
+assert.match(selected.html, /data:image\/png;base64/);
+assert.match(selected.html, /SELECTED_OTHER_FOLDER/);
+assert.throws(() => render({ vault: v, files: [] }), /No notes/);
+for (const file of ["../escape.md", "Course/missing.md", "pixel.png"]) {
+  assert.throws(() => render({ vault: v, files: [file] }), /Selected note/);
+}
+console.log("PASS: selected notes across folders, deduplication, assets, invalid selections");
