@@ -68,3 +68,9 @@ Source is included in `src/`. From this folder, run `npm install`, then `npm run
 ### Browser checks
 
 Run `npm run build`, `npm test`, then `npm run test:browser`. Browser tests use `CHROMIUM_PATH` if set, system Chromium when available, or the browser installed with `npx playwright-core install chromium`. CI installs Chromium and runs the same tests. Tests load generated HTML into an offline Chromium document and exercise formatting and PDF output.
+
+## License
+
+Clear Math Print is licensed under the [MIT License](LICENSE). Copyright (c) 2026 Asdao.
+
+Bundled third-party code and fonts retain their respective licenses; see [THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt). The embedded print fonts are licensed under the SIL Open Font License 1.1.
