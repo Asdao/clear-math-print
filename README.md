@@ -22,9 +22,19 @@ The initial folder is the active note’s folder; the starting-note field is emp
 - An optional linked contents list can be shown in the preview and PDF.
 - Preview controls adjust text size, margins, page breaks between notes, note titles, and the contents list before printing. Contents are hidden by default; the controls never appear in the PDF. A matching first heading is kept once instead of repeating the filename above it. Note content is otherwise preserved.
 - The Font selector offers Source Serif 4, Source Sans 3, Inter, and the existing system Georgia option. The three open-source font families include bold and italic and are embedded for offline use. Math retains its KaTeX fonts. Font licenses are included in the exported HTML and `THIRD-PARTY-NOTICES.txt`.
-- Text sizes range from 6 to 48 pt, including half-point options around common reading sizes. Compact and Comfortable still start at 10 and 11 pt respectively.
+- Text sizes range from 6 to 48 pt in half-point increments. Compact and Comfortable still start at 10 and 11 pt respectively.
 
 The plugin opens the browser's print preview workflow rather than generating a PDF inside Obsidian. It does not require Node, Python, a venv, Chrome automation, or a network connection. It writes HTML and a matching JSON report beneath `.obsidian/plugins/clear-math-print/exports/`. Existing source notes are read only. Old exports are retained; delete them manually when no longer needed.
+
+## Browser formatting controls
+
+Open an export in your browser and expand **Formatting**. Choose Compact, Comfortable, or Academic, then adjust individual settings. Changes update the document immediately without changing your Obsidian notes.
+
+Controls include font family, text size, line spacing, four margins, heading scale, maximum image height, A4/Letter paper, portrait/landscape orientation, and note breaks. **Reset to initial settings** restores the options used to create this export. Large images are also capped to the available page height. Font choices include embedded Source Serif 4, Source Sans 3, and Inter, plus system Georgia, Arial, and Courier. Math fonts remain embedded.
+
+Settings apply to the current open preview only. Reloading the HTML restores its initial settings; changing controls does not save the HTML or sync settings back to Obsidian. Saved custom presets, CSS editing, and note-content editing are not included in this version.
+
+The screen shows a continuous document, not exact page boundaries. In the browser print dialog, use the selected paper and orientation, scale 100%, and enable background graphics. Print-dialog settings can override the page CSS. The formatting controls are hidden in printed output.
 
 ## Supported content and limits
 
@@ -46,10 +56,21 @@ Options: `--order created|name`, `--comfortable`, `--note-breaks`. Open the resu
 
 ## Validation
 
-The same renderer generated a 101-page compact PDF from the 16 CS2100 notes, compared with the original 131 pages. It preserved all 186 images and rendered 161 math expressions with zero detected parse errors, broken images or horizontal overflow at A4 print width. Page thumbnails and the originally clipped formula were inspected.
+An earlier renderer version generated a 101-page compact PDF from 16 sample notes, compared with the original 131 pages. It preserved all 186 images and rendered 161 math expressions with zero detected parse errors, broken images or horizontal overflow at A4 print width. Page thumbnails and the originally clipped formula were inspected.
 
-Fixture tests cover math, images, basic callouts, whole-note/heading embeds, circular embeds, links, missing-content warnings and vault path bounds. The bundled plugin command, modal and browser export handoff were tested with a mock Obsidian API. This version has not been installed or interactively tested in the live Obsidian app.
+Fixture tests cover math, images, basic callouts, whole-note/heading embeds, circular embeds, links, missing-content warnings and vault path bounds. The bundled plugin command, modal and browser export handoff were tested with a mock Obsidian API. Chromium tests cover formatting and PDF output; they do not replace live Obsidian testing. This version has not been installed or interactively tested in the live Obsidian app.
 
 ## Source and build
 
 Source is included in `src/`. From this folder, run `npm install`, then `npm run build`. Build dependencies are declared in `package.json`; the distributed `main.js` and `convert.cjs` already include runtime dependencies. Bundled dependency licenses are in `THIRD-PARTY-NOTICES.txt`.
+
+
+### Browser checks
+
+Run `npm run build`, `npm test`, then `npm run test:browser`. Browser tests use `CHROMIUM_PATH` if set, system Chromium when available, or the browser installed with `npx playwright-core install chromium`. CI installs Chromium and runs the same tests. Tests load generated HTML into an offline Chromium document and exercise formatting and PDF output.
+
+## License
+
+Clear Math Print is licensed under the [MIT License](LICENSE). Copyright (c) 2026 Asdao.
+
+Bundled third-party code and fonts retain their respective licenses; see [THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt). The embedded print fonts are licensed under the SIL Open Font License 1.1.

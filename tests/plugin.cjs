@@ -44,7 +44,7 @@ async function check(entry) {
   const nativeRequire = createRequire(file);
   const module = { exports: {} };
   vm.runInNewContext(fs.readFileSync(file, "utf8"), {
-    module, exports: module.exports, setTimeout, console, Buffer, process,
+    module, exports: module.exports, setTimeout, clearTimeout, console, Buffer, process,
     require(name) {
       if (name === "obsidian") return { Plugin, Modal, Setting, Notice: class { constructor(text) { notices.push(text); } } };
       if (name === "electron") return { shell: { async openPath(file) { opened = file; return ""; } } };
