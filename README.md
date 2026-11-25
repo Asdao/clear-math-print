@@ -56,7 +56,7 @@ Options: `--order created|name`, `--comfortable`, `--note-breaks`. Open the resu
 
 ## Validation
 
-An earlier renderer version generated a 101-page compact PDF from the 16 CS2100 notes, compared with the original 131 pages. It preserved all 186 images and rendered 161 math expressions with zero detected parse errors, broken images or horizontal overflow at A4 print width. Page thumbnails and the originally clipped formula were inspected.
+An earlier renderer version generated a 101-page compact PDF from 16 sample notes, compared with the original 131 pages. It preserved all 186 images and rendered 161 math expressions with zero detected parse errors, broken images or horizontal overflow at A4 print width. Page thumbnails and the originally clipped formula were inspected.
 
 Fixture tests cover math, images, basic callouts, whole-note/heading embeds, circular embeds, links, missing-content warnings and vault path bounds. The bundled plugin command, modal and browser export handoff were tested with a mock Obsidian API. Chromium tests cover formatting and PDF output; they do not replace live Obsidian testing. This version has not been installed or interactively tested in the live Obsidian app.
 
