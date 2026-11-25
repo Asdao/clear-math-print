@@ -1,6 +1,7 @@
 const { Plugin, Modal, Setting, Notice } = require("obsidian");
 const fs = require("fs"), path = require("path"), { shell } = require("electron");
 const { render, list } = require("./core.cjs");
+const { ExportService } = require("./export-service.cjs");
 function printablePaths(files) {
   const paths = new Set();
   function add(file) {
@@ -24,6 +25,7 @@ class ExportModal extends Modal {
     el.createEl("p", { text: "Choose notes, review the list, then open an offline print preview." });
     const o = this.options;
     const refresh = () => {
+      clearTimeout(this.refreshTimer);
       try {
         const base = this.app.vault.adapter.getBasePath();
         const result = list(base, o.folder, o.start, o.order, this.selected ? this.files : undefined);
@@ -34,6 +36,12 @@ class ExportModal extends Modal {
         button.setDisabled(true);
       }
     };
+    const scheduleRefresh = () => {
+      clearTimeout(this.refreshTimer);
+      button.setDisabled(true);
+      preview.setText("Updating note list...");
+      this.refreshTimer = setTimeout(refresh, 150);
+    };
     if (this.files.length) {
       new Setting(el).setName("Print source").addDropdown((d) => d.addOption("selected", "Selected files (" + this.files.length + ")").addOption("folder", "Folder").setValue("selected").onChange((v) => {
         this.selected = v === "selected";
@@ -43,11 +51,11 @@ class ExportModal extends Modal {
     }
     new Setting(el).setName("Folder").setDesc("Vault-relative folder; includes subfolders.").addText((t) => t.setValue(o.folder).onChange((v) => {
       o.folder = v.trim();
-      refresh();
+      scheduleRefresh();
     }));
     new Setting(el).setName("Starting note (optional)").setDesc("Filename relative to the folder. Includes notes created at or after it.").addText((t) => t.setValue(o.start).onChange((v) => {
       o.start = v.trim();
-      refresh();
+      scheduleRefresh();
     }));
     new Setting(el).setName("Order").addDropdown((d) => d.addOption("created", "Creation date").addOption("name", "Filename").setValue(o.order).onChange((v) => {
       o.order = v;
@@ -67,16 +75,11 @@ class ExportModal extends Modal {
         try {
           await new Promise((r) => setTimeout(r, 20));
           const base = this.app.vault.adapter.getBasePath();
-          const result = render({ ...o, files: this.selected ? this.files : undefined, vault: base, title: "Vault Print Notes" });
           const folder = path.join(base, this.app.vault.configDir, "plugins", this.plugin.manifest.id, "exports");
-          fs.mkdirSync(folder, { recursive: true });
-          const file = path.join(folder, "notes-" + Date.now() + ".html");
-          fs.writeFileSync(file, result.html);
-          fs.writeFileSync(file + ".json", JSON.stringify({ notes: result.notes, warnings: result.warnings }, null, 2));
+          const result = this.plugin.exportService.createPreview({ ...o, files: this.selected ? this.files : undefined, vault: base, title: "Vault Print Notes" }, folder);
           this.plugin.options = { ...o };
           await this.plugin.saveData(o);
-          const error = await shell.openPath(file);
-          if (error) throw Error(error);
+          await this.plugin.exportService.open(result.file);
           new Notice("Print preview created: " + result.notes.length + " notes" + (result.warnings.length ? ". " + result.warnings.length + " warnings; see preview report." : ""), 1e4);
           if (result.warnings.length) {
             preview.setText(result.warnings.join("\n"));
@@ -91,13 +94,14 @@ class ExportModal extends Modal {
     refresh();
   }
   onClose() {
+    clearTimeout(this.refreshTimer);
     this.contentEl.empty();
   }
 }
 module.exports = class extends Plugin {
   explorerSelection() {
     const files = [];
-    for (const leaf of this.app.workspace.getLeavesOfType("file-explorer")) {
+    for (const leaf of this.app.workspace.getLeavesOfType?.("file-explorer") || []) {
       const view = leaf.view;
       // Explorer selection is not exposed by the public API; support its tree
       // selection and DOM representation, with context-menu events as fallback.
@@ -115,6 +119,7 @@ module.exports = class extends Plugin {
     return printablePaths(files);
   }
   async onload() {
+    this.exportService = new ExportService({ render, fs, openPath: (file) => shell.openPath(file) });
     this.options = { folder: this.app.workspace.getActiveFile()?.parent?.path || "", start: "", order: "created", compact: true, noteBreaks: false, ...await this.loadData() };
     if (this.options.folder === "/") this.options.folder = "";
     const open = () => new ExportModal(this, this.explorerSelection()).open();
